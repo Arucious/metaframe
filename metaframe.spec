@@ -38,35 +38,42 @@ a = Analysis(
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
-exe = EXE(
-    pyz,
-    a.scripts,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    [],
-    name='metaframe',
-    debug=False,
-    bootloader_ignore_signals=False,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    runtime_tmpdir=None,
-    console=False,  # Set to True for CLI-only builds
-    disable_windowed_traceback=False,
-    argv_emulation=True,  # For macOS
-    target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
-    icon=None,  # Add icon path here if desired
-)
-
-# macOS app bundle (optional)
 if sys.platform == 'darwin':
-    app = BUNDLE(
+    # macOS: Create one-folder build, then bundle into .app
+    exe = EXE(
+        pyz,
+        a.scripts,
+        [],
+        exclude_binaries=True,
+        name='metaframe',
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=True,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=True,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+        icon=None,
+    )
+
+    coll = COLLECT(
         exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        name='metaframe',
+    )
+
+    app = BUNDLE(
+        coll,
         name='MetaFrame.app',
-        icon=None,  # Add .icns file path here if desired
+        icon=None,
         bundle_identifier='com.metaframe.app',
         info_plist={
             'CFBundleShortVersionString': '0.1.0',
@@ -85,4 +92,28 @@ if sys.platform == 'darwin':
                 }
             ],
         },
+    )
+else:
+    # Windows/Linux: Create one-file executable
+    exe = EXE(
+        pyz,
+        a.scripts,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        [],
+        name='metaframe',
+        debug=False,
+        bootloader_ignore_signals=False,
+        strip=False,
+        upx=True,
+        upx_exclude=[],
+        runtime_tmpdir=None,
+        console=False,
+        disable_windowed_traceback=False,
+        argv_emulation=False,
+        target_arch=None,
+        codesign_identity=None,
+        entitlements_file=None,
+        icon=None,
     )

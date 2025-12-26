@@ -23,8 +23,8 @@ jobs:
             artifact_name: metaframe.exe
             asset_name: metaframe-windows-amd64.exe
           - os: macos-latest
-            artifact_name: metaframe
-            asset_name: metaframe-macos-arm64
+            artifact_name: MetaFrame.app
+            asset_name: metaframe-macos-app
 
     runs-on: ${{ matrix.os }}
 
@@ -72,7 +72,8 @@ jobs:
         run: |
           mv dist/metaframe dist/${{ matrix.artifact_name }}
 
-      - name: Upload artifact
+      - name: Upload artifact (Linux/Windows)
+        if: runner.os != 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.asset_name }}
@@ -83,11 +84,14 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           cd dist
+          ls -la
           if [ -d "MetaFrame.app" ]; then
             zip -r MetaFrame-macos.app.zip MetaFrame.app
+            echo "Created MetaFrame-macos.app.zip"
             ls -la
           else
-            echo "MetaFrame.app not found"
+            echo "ERROR: MetaFrame.app not found!"
+            exit 1
           fi
 
       - name: Upload macOS app bundle
@@ -96,7 +100,7 @@ jobs:
         with:
           name: metaframe-macos-app
           path: dist/MetaFrame-macos.app.zip
-          if-no-files-found: warn
+          if-no-files-found: error
 
   release:
     needs: build
@@ -124,13 +128,8 @@ jobs:
           chmod +x release/metaframe-linux-amd64
           # Windows
           cp artifacts/metaframe-windows-amd64.exe/metaframe.exe release/metaframe-windows-amd64.exe
-          # macOS
-          cp artifacts/metaframe-macos-arm64/metaframe release/metaframe-macos-arm64
-          chmod +x release/metaframe-macos-arm64
-          # macOS app bundle (if exists - already zipped)
-          if [ -f "artifacts/metaframe-macos-app/MetaFrame-macos.app.zip" ]; then
-            cp artifacts/metaframe-macos-app/MetaFrame-macos.app.zip release/
-          fi
+          # macOS app bundle
+          cp artifacts/metaframe-macos-app/MetaFrame-macos.app.zip release/
           ls -la release/
 
       - name: Create Release
