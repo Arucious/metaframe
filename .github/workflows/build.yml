@@ -63,6 +63,7 @@ jobs:
           pyinstaller metaframe.spec --noconfirm
 
       - name: List build output
+        shell: bash
         run: |
           ls -la dist/
 
