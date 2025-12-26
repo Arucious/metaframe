@@ -111,7 +111,7 @@ jobs:
           cp artifacts/metaframe-macos-arm64/metaframe release/metaframe-macos-arm64
           chmod +x release/metaframe-macos-arm64
           # macOS app bundle (if exists)
-          if [ -d "artifacts/metaframe-macos-app" ]; then
+          if [ -d "artifacts/metaframe-macos-app" ] && [ -d "artifacts/metaframe-macos-app/MetaFrame.app" ]; then
             cd artifacts/metaframe-macos-app
             zip -r ../../release/MetaFrame-macos.app.zip MetaFrame.app
             cd ../..
