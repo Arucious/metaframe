@@ -35,7 +35,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
@@ -80,12 +80,14 @@ jobs:
           path: dist/${{ matrix.artifact_name }}
           if-no-files-found: error
 
-      - name: Create macOS app bundle zip
+      - name: Sign and create macOS app bundle zip
         if: runner.os == 'macOS'
         run: |
           cd dist
           ls -la
           if [ -d "MetaFrame.app" ]; then
+            # Ad-hoc sign the app to prevent code signing issues
+            codesign --force --deep --sign - MetaFrame.app
             zip -r MetaFrame-macos.app.zip MetaFrame.app
             echo "Created MetaFrame-macos.app.zip"
             ls -la
@@ -152,7 +154,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install dependencies
         run: |
