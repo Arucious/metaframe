@@ -1,0 +1,67 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "metaframe"
+version = "0.1.0"
+description = "Add EXIF metadata frames to your photographs"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [
+    { name = "Your Name", email = "you@example.com" }
+]
+keywords = ["photography", "exif", "metadata", "image", "frame"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Environment :: X11 Applications :: Qt",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Multimedia :: Graphics",
+]
+dependencies = [
+    "PyQt6>=6.6.0",
+    "Pillow>=10.0.0",
+    "exifread>=3.0.0",
+    "click>=8.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pyinstaller>=6.0.0",
+    "ruff>=0.1.0",
+]
+
+[project.scripts]
+metaframe = "metaframe.cli.main:cli"
+
+[project.gui-scripts]
+metaframe-gui = "metaframe.gui.main_window:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/metaframe"
+Repository = "https://github.com/yourusername/metaframe"
+Issues = "https://github.com/yourusername/metaframe/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/metaframe"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+ignore = ["N802"]  # Allow camelCase for PyQt6 method overrides
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
