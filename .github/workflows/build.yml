@@ -62,6 +62,10 @@ jobs:
         run: |
           pyinstaller metaframe.spec --noconfirm
 
+      - name: List build output
+        run: |
+          ls -la dist/
+
       - name: Rename artifact (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -74,13 +78,24 @@ jobs:
           path: dist/${{ matrix.artifact_name }}
           if-no-files-found: error
 
+      - name: Create macOS app bundle zip
+        if: runner.os == 'macOS'
+        run: |
+          cd dist
+          if [ -d "MetaFrame.app" ]; then
+            zip -r MetaFrame-macos.app.zip MetaFrame.app
+            ls -la
+          else
+            echo "MetaFrame.app not found"
+          fi
+
       - name: Upload macOS app bundle
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
         with:
           name: metaframe-macos-app
-          path: dist/MetaFrame.app
-          if-no-files-found: ignore
+          path: dist/MetaFrame-macos.app.zip
+          if-no-files-found: warn
 
   release:
     needs: build
@@ -102,6 +117,7 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release
+          ls -laR artifacts/
           # Linux
           cp artifacts/metaframe-linux-amd64/metaframe-linux release/metaframe-linux-amd64
           chmod +x release/metaframe-linux-amd64
@@ -110,12 +126,11 @@ jobs:
           # macOS
           cp artifacts/metaframe-macos-arm64/metaframe release/metaframe-macos-arm64
           chmod +x release/metaframe-macos-arm64
-          # macOS app bundle (if exists)
-          if [ -d "artifacts/metaframe-macos-app" ] && [ -d "artifacts/metaframe-macos-app/MetaFrame.app" ]; then
-            cd artifacts/metaframe-macos-app
-            zip -r ../../release/MetaFrame-macos.app.zip MetaFrame.app
-            cd ../..
+          # macOS app bundle (if exists - already zipped)
+          if [ -f "artifacts/metaframe-macos-app/MetaFrame-macos.app.zip" ]; then
+            cp artifacts/metaframe-macos-app/MetaFrame-macos.app.zip release/
           fi
+          ls -la release/
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
