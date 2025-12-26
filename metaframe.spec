@@ -13,10 +13,7 @@ a = Analysis(
     [str(project_root / 'src' / 'metaframe' / '__main__.py')],
     pathex=[str(project_root / 'src')],
     binaries=[],
-    datas=[
-        # Include bundled fonts if any
-        (str(project_root / 'src' / 'metaframe' / 'gui' / 'resources'), 'metaframe/gui/resources'),
-    ],
+    datas=[],
     hiddenimports=[
         'PyQt6.sip',
         'PIL._tkinter_finder',
