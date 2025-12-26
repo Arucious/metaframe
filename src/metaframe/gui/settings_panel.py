@@ -172,9 +172,8 @@ class SettingsPanel(QWidget):
         # Font family
         self.font_combo = QComboBox()
         self.font_combo.setEditable(True)
-        # Populate with system fonts
-        font_db = QFontDatabase()
-        families = font_db.families()
+        # Populate with system fonts (static method in PyQt6)
+        families = QFontDatabase.families()
         self.font_combo.addItems(sorted(families))
         self.font_combo.currentTextChanged.connect(self._emit_changes)
         font_layout.addRow("Font:", self.font_combo)
