@@ -28,6 +28,35 @@ class MetadataPosition(Enum):
     RIGHT = "right"
 
 
+class TextAlignment(Enum):
+    """Text alignment within the frame."""
+
+    LEFT = "left"
+    CENTER = "center"
+    RIGHT = "right"
+
+
+class AspectRatioPreset(Enum):
+    """Preset aspect ratios for output."""
+
+    ORIGINAL = "original"  # Keep original aspect ratio
+    SQUARE_1_1 = "1:1"  # Instagram square
+    PORTRAIT_4_5 = "4:5"  # Instagram portrait
+    LANDSCAPE_16_9 = "16:9"  # Widescreen
+    LANDSCAPE_3_2 = "3:2"  # Classic 35mm
+    PORTRAIT_9_16 = "9:16"  # Stories/Reels
+
+
+ASPECT_RATIOS = {
+    AspectRatioPreset.ORIGINAL: None,
+    AspectRatioPreset.SQUARE_1_1: (1, 1),
+    AspectRatioPreset.PORTRAIT_4_5: (4, 5),
+    AspectRatioPreset.LANDSCAPE_16_9: (16, 9),
+    AspectRatioPreset.LANDSCAPE_3_2: (3, 2),
+    AspectRatioPreset.PORTRAIT_9_16: (9, 16),
+}
+
+
 class RowLayout(Enum):
     """Layout style for metadata rows."""
 
@@ -99,13 +128,17 @@ class FrameSettings:
 
     # Font settings
     font_family: str = "Arial"  # Font name or path
-    font_size: int = 24
+    font_size: int = 0  # 0 = auto-calculate based on image size
     italic: bool = True
 
     # Layout
     position: MetadataPosition = MetadataPosition.BOTTOM
     row_layout: RowLayout = RowLayout.SINGLE
     separator: Separator = Separator.PIPE
+    text_alignment: TextAlignment = TextAlignment.CENTER
+
+    # Aspect ratio
+    aspect_ratio: AspectRatioPreset = AspectRatioPreset.ORIGINAL
 
     # Metadata fields to include
     fields: list[MetadataField] = field(default_factory=lambda: DEFAULT_FIELDS.copy())
@@ -114,6 +147,15 @@ class FrameSettings:
     # Output
     output_suffix: str = "_framed"
     jpeg_quality: int = 95
+
+    def get_auto_font_size(self, image_width: int, image_height: int) -> int:
+        """Calculate appropriate font size based on image dimensions."""
+        if self.font_size > 0:
+            return self.font_size
+        # Base font size on the smaller dimension, roughly 2% of it
+        base_size = min(image_width, image_height)
+        calculated = max(16, int(base_size * 0.025))
+        return min(calculated, 72)  # Cap at 72pt
 
     def get_separator_string(self) -> str:
         """Get the separator string for the current separator style."""

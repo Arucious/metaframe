@@ -18,12 +18,14 @@ from PyQt6.QtWidgets import (
 )
 
 from metaframe.core.config import FrameSettings
-from metaframe.core.framer import Framer
+from metaframe.core.framer import HEIF_EXTENSIONS, RAW_EXTENSIONS, Framer
 from metaframe.core.metadata import ExtractedMetadata, MetadataExtractor
 from metaframe.gui.preview_widget import PreviewWidget
 from metaframe.gui.settings_panel import SettingsPanel
 
-SUPPORTED_EXTENSIONS = (".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp")
+# All supported image extensions
+STANDARD_EXTENSIONS = {".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp"}
+SUPPORTED_EXTENSIONS = STANDARD_EXTENSIONS | RAW_EXTENSIONS | HEIF_EXTENSIONS
 
 
 class BatchProcessWorker(QThread):
@@ -156,11 +158,14 @@ class MainWindow(QMainWindow):
 
     def _open_file(self):
         """Open an image file."""
+        # Build filter string with all supported extensions
+        all_ext = " ".join(f"*{ext}" for ext in sorted(SUPPORTED_EXTENSIONS))
+        raw_filter = "RAW Images (*.cr2 *.cr3 *.nef *.arw *.dng *.raf *.orf *.rw2)"
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Open Image",
             "",
-            "Images (*.jpg *.jpeg *.png *.tiff *.tif *.webp);;All Files (*)",
+            f"Images ({all_ext});;{raw_filter};;All Files (*)",
         )
 
         if file_path:
@@ -241,11 +246,13 @@ class MainWindow(QMainWindow):
     def _batch_process(self):
         """Batch process multiple images."""
         # Select input files/folder
+        all_ext = " ".join(f"*{ext}" for ext in sorted(SUPPORTED_EXTENSIONS))
+        raw_filter = "RAW Images (*.cr2 *.cr3 *.nef *.arw *.dng *.raf *.orf *.rw2)"
         file_paths, _ = QFileDialog.getOpenFileNames(
             self,
             "Select Images",
             "",
-            "Images (*.jpg *.jpeg *.png *.tiff *.tif *.webp);;All Files (*)",
+            f"Images ({all_ext});;{raw_filter};;All Files (*)",
         )
 
         if not file_paths:

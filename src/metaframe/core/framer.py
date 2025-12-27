@@ -7,14 +7,68 @@ from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 from metaframe.core.config import (
+    ASPECT_RATIOS,
     CAMERA_INFO_FIELDS,
     SETTINGS_FIELDS,
     FrameSettings,
     MetadataPosition,
     RowLayout,
+    TextAlignment,
     get_font_path,
 )
 from metaframe.core.metadata import ExtractedMetadata, MetadataExtractor
+
+# RAW file extensions
+RAW_EXTENSIONS = {
+    ".cr2", ".cr3",  # Canon
+    ".nef", ".nrw",  # Nikon
+    ".arw", ".srf", ".sr2",  # Sony
+    ".orf",  # Olympus
+    ".rw2",  # Panasonic
+    ".raf",  # Fujifilm
+    ".dng",  # Adobe DNG
+    ".raw", ".rwl",  # Leica
+    ".pef",  # Pentax
+    ".3fr",  # Hasselblad
+    ".iiq",  # Phase One
+}
+
+# HEIF extensions
+HEIF_EXTENSIONS = {".heic", ".heif"}
+
+
+def load_image(image_path: Path) -> Image.Image:
+    """Load an image, handling RAW and HEIF formats."""
+    suffix = image_path.suffix.lower()
+
+    if suffix in RAW_EXTENSIONS:
+        try:
+            import rawpy
+
+            with rawpy.imread(str(image_path)) as raw:
+                rgb = raw.postprocess(
+                    use_camera_wb=True,
+                    half_size=False,
+                    no_auto_bright=False,
+                    output_bps=8,
+                )
+                return Image.fromarray(rgb)
+        except ImportError:
+            raise ImportError(
+                "rawpy is required for RAW file support. Install with: pip install rawpy"
+            )
+
+    if suffix in HEIF_EXTENSIONS:
+        try:
+            from pillow_heif import register_heif_opener
+            register_heif_opener()
+        except ImportError:
+            raise ImportError(
+                "pillow-heif is required for HEIC/HEIF support. "
+                "Install with: pip install pillow-heif"
+            )
+
+    return Image.open(image_path)
 
 
 class Framer:
@@ -169,8 +223,9 @@ class Framer:
         """
         image_path = Path(image_path)
 
-        # Load original image
-        with Image.open(image_path) as img:
+        # Load original image (supports RAW and HEIF formats)
+        img = load_image(image_path)
+        try:
             # Handle EXIF orientation
             img = self._apply_exif_orientation(img)
 
@@ -194,6 +249,8 @@ class Framer:
             framed = self._create_framed_image(img, text_lines)
 
             return framed
+        finally:
+            img.close()
 
     def _apply_exif_orientation(self, img: Image.Image) -> Image.Image:
         """Apply EXIF orientation to the image."""
@@ -253,13 +310,48 @@ class Framer:
                     lines.append(value)
             return lines
 
+    def _apply_aspect_ratio(self, img: Image.Image) -> Image.Image:
+        """Apply aspect ratio preset by cropping to target ratio."""
+        aspect_preset = self.settings.aspect_ratio
+        target_ratio = ASPECT_RATIOS.get(aspect_preset)
+
+        if target_ratio is None:
+            # Original aspect ratio, no change
+            return img
+
+        target_w, target_h = target_ratio
+        target_aspect = target_w / target_h
+        current_aspect = img.width / img.height
+
+        if abs(current_aspect - target_aspect) < 0.01:
+            # Already close enough to target
+            return img
+
+        # Crop to target aspect ratio (center crop)
+        if current_aspect > target_aspect:
+            # Image is wider than target, crop width
+            new_width = int(img.height * target_aspect)
+            left = (img.width - new_width) // 2
+            return img.crop((left, 0, left + new_width, img.height))
+        else:
+            # Image is taller than target, crop height
+            new_height = int(img.width / target_aspect)
+            top = (img.height - new_height) // 2
+            return img.crop((0, top, img.width, top + new_height))
+
     def _create_framed_image(
         self, img: Image.Image, text_lines: list[str]
     ) -> Image.Image:
         """Create the framed image with text overlay."""
+        # Apply aspect ratio crop first
+        img = self._apply_aspect_ratio(img)
+
         bg_color = self._parse_color(self.settings.background_color)
         text_color = self._parse_color(self.settings.text_color)
-        font = self._get_font()
+
+        # Calculate auto font size based on image dimensions
+        font_size = self.settings.get_auto_font_size(img.width, img.height)
+        font = self._get_font(size=font_size)
 
         position = self.settings.position
         padding = self.settings.padding
@@ -309,7 +401,13 @@ class Framer:
 
             for i, line in enumerate(text_lines):
                 text_width = line_widths[i]
-                text_x = (new_width - text_width) // 2  # Center horizontally
+                # Calculate text_x based on alignment
+                if self.settings.text_alignment == TextAlignment.LEFT:
+                    text_x = padding
+                elif self.settings.text_alignment == TextAlignment.RIGHT:
+                    text_x = new_width - padding - text_width
+                else:  # CENTER
+                    text_x = (new_width - text_width) // 2
                 draw.text((text_x, current_y), line, font=font, fill=text_color)
                 current_y += line_heights[i] + line_spacing
 

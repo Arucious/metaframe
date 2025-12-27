@@ -20,11 +20,13 @@ from PyQt6.QtWidgets import (
 
 from metaframe.core.config import (
     PRESET_COLORS,
+    AspectRatioPreset,
     FrameSettings,
     MetadataField,
     MetadataPosition,
     RowLayout,
     Separator,
+    TextAlignment,
 )
 from metaframe.core.metadata import ExtractedMetadata
 
@@ -178,9 +180,10 @@ class SettingsPanel(QWidget):
         self.font_combo.currentTextChanged.connect(self._emit_changes)
         font_layout.addRow("Font:", self.font_combo)
 
-        # Font size
+        # Font size (0 = auto)
         self.font_size_spin = QSpinBox()
-        self.font_size_spin.setRange(8, 72)
+        self.font_size_spin.setRange(0, 72)
+        self.font_size_spin.setSpecialValueText("Auto")
         self.font_size_spin.setSuffix(" pt")
         self.font_size_spin.valueChanged.connect(self._emit_changes)
         font_layout.addRow("Size:", self.font_size_spin)
@@ -212,6 +215,25 @@ class SettingsPanel(QWidget):
         self.separator_combo.addItems(["Pipe ( | )", "Bullet ( \u2022 )", "Dash ( \u2014 )"])
         self.separator_combo.currentIndexChanged.connect(self._emit_changes)
         layout_form.addRow("Separator:", self.separator_combo)
+
+        # Text alignment
+        self.alignment_combo = QComboBox()
+        self.alignment_combo.addItems(["Left", "Center", "Right"])
+        self.alignment_combo.currentIndexChanged.connect(self._emit_changes)
+        layout_form.addRow("Alignment:", self.alignment_combo)
+
+        # Aspect ratio presets
+        self.aspect_combo = QComboBox()
+        self.aspect_combo.addItems([
+            "Original",
+            "1:1 (Square)",
+            "4:5 (Instagram)",
+            "16:9 (Widescreen)",
+            "3:2 (Classic)",
+            "9:16 (Stories)",
+        ])
+        self.aspect_combo.currentIndexChanged.connect(self._emit_changes)
+        layout_form.addRow("Aspect Ratio:", self.aspect_combo)
 
         # Metadata Fields Group
         fields_group = QGroupBox("Metadata Fields")
@@ -299,6 +321,25 @@ class SettingsPanel(QWidget):
         }
         self.separator_combo.setCurrentIndex(separator_map.get(self._settings.separator, 0))
 
+        # Text alignment
+        alignment_map = {
+            TextAlignment.LEFT: 0,
+            TextAlignment.CENTER: 1,
+            TextAlignment.RIGHT: 2,
+        }
+        self.alignment_combo.setCurrentIndex(alignment_map.get(self._settings.text_alignment, 1))
+
+        # Aspect ratio
+        aspect_map = {
+            AspectRatioPreset.ORIGINAL: 0,
+            AspectRatioPreset.SQUARE_1_1: 1,
+            AspectRatioPreset.PORTRAIT_4_5: 2,
+            AspectRatioPreset.LANDSCAPE_16_9: 3,
+            AspectRatioPreset.LANDSCAPE_3_2: 4,
+            AspectRatioPreset.PORTRAIT_9_16: 5,
+        }
+        self.aspect_combo.setCurrentIndex(aspect_map.get(self._settings.aspect_ratio, 0))
+
         # Field checkboxes
         for field, check in self.field_checks.items():
             if field == MetadataField.GPS:
@@ -335,6 +376,8 @@ class SettingsPanel(QWidget):
             position=self._get_position(),
             row_layout=self._get_row_layout(),
             separator=self._get_separator(),
+            text_alignment=self._get_text_alignment(),
+            aspect_ratio=self._get_aspect_ratio(),
             fields=self._get_selected_fields(),
             include_gps=self.field_checks[MetadataField.GPS].isChecked(),
         )
@@ -364,6 +407,25 @@ class SettingsPanel(QWidget):
         index = self.separator_combo.currentIndex()
         separators = [Separator.PIPE, Separator.BULLET, Separator.DASH]
         return separators[index]
+
+    def _get_text_alignment(self) -> TextAlignment:
+        """Get selected text alignment."""
+        index = self.alignment_combo.currentIndex()
+        alignments = [TextAlignment.LEFT, TextAlignment.CENTER, TextAlignment.RIGHT]
+        return alignments[index]
+
+    def _get_aspect_ratio(self) -> AspectRatioPreset:
+        """Get selected aspect ratio preset."""
+        index = self.aspect_combo.currentIndex()
+        presets = [
+            AspectRatioPreset.ORIGINAL,
+            AspectRatioPreset.SQUARE_1_1,
+            AspectRatioPreset.PORTRAIT_4_5,
+            AspectRatioPreset.LANDSCAPE_16_9,
+            AspectRatioPreset.LANDSCAPE_3_2,
+            AspectRatioPreset.PORTRAIT_9_16,
+        ]
+        return presets[index]
 
     def _get_selected_fields(self) -> list[MetadataField]:
         """Get list of selected metadata fields."""

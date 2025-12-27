@@ -19,6 +19,13 @@ a = Analysis(
         'PIL._tkinter_finder',
         'exifread',
         'click',
+        # RAW image support (optional - imported lazily)
+        'rawpy',
+        'rawpy._rawpy',
+        'numpy',
+        # HEIF support (optional - imported lazily)
+        'pillow_heif',
+        'pillow_heif._pillow_heif',
     ],
     hookspath=[],
     hooksconfig={},
@@ -26,7 +33,6 @@ a = Analysis(
     excludes=[
         'tkinter',
         'matplotlib',
-        'numpy',
         'pandas',
         'scipy',
     ],

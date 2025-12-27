@@ -3,8 +3,8 @@
 from pathlib import Path
 
 from PIL import Image
-from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtGui import QImage, QPixmap, QWheelEvent
+from PyQt6.QtCore import QPoint, QSize, Qt
+from PyQt6.QtGui import QImage, QMouseEvent, QPixmap, QWheelEvent
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -30,6 +30,12 @@ class PreviewWidget(QWidget):
         self._min_zoom = 0.1
         self._max_zoom = 5.0
 
+        # Panning state
+        self._is_panning = False
+        self._pan_start_pos: QPoint | None = None
+        self._scroll_start_h = 0
+        self._scroll_start_v = 0
+
         self._setup_ui()
 
     def _setup_ui(self):
@@ -39,18 +45,21 @@ class PreviewWidget(QWidget):
 
         # Scroll area for the image
         self.scroll_area = QScrollArea()
-        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setWidgetResizable(False)  # Allow image to be larger than viewport
         self.scroll_area.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.scroll_area.setFrameShape(QFrame.Shape.StyledPanel)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         layout.addWidget(self.scroll_area, 1)
 
         # Image label
         self.image_label = QLabel()
         self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.image_label.setSizePolicy(
-            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding
         )
         self.image_label.setStyleSheet("background-color: #f0f0f0;")
+        self.image_label.setCursor(Qt.CursorShape.OpenHandCursor)
         self.scroll_area.setWidget(self.image_label)
 
         # Placeholder text
@@ -229,3 +238,39 @@ class PreviewWidget(QWidget):
         """Handle resize to maintain fit if needed."""
         super().resizeEvent(event)
         # Could auto-fit here if desired
+
+    def mousePressEvent(self, event: QMouseEvent):
+        """Handle mouse press for panning."""
+        if event.button() == Qt.MouseButton.LeftButton and self._current_image is not None:
+            self._is_panning = True
+            self._pan_start_pos = event.globalPosition().toPoint()
+            self._scroll_start_h = self.scroll_area.horizontalScrollBar().value()
+            self._scroll_start_v = self.scroll_area.verticalScrollBar().value()
+            self.image_label.setCursor(Qt.CursorShape.ClosedHandCursor)
+            event.accept()
+        else:
+            super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event: QMouseEvent):
+        """Handle mouse move for panning."""
+        if self._is_panning and self._pan_start_pos is not None:
+            delta = event.globalPosition().toPoint() - self._pan_start_pos
+            self.scroll_area.horizontalScrollBar().setValue(
+                self._scroll_start_h - delta.x()
+            )
+            self.scroll_area.verticalScrollBar().setValue(
+                self._scroll_start_v - delta.y()
+            )
+            event.accept()
+        else:
+            super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent):
+        """Handle mouse release to end panning."""
+        if event.button() == Qt.MouseButton.LeftButton and self._is_panning:
+            self._is_panning = False
+            self._pan_start_pos = None
+            self.image_label.setCursor(Qt.CursorShape.OpenHandCursor)
+            event.accept()
+        else:
+            super().mouseReleaseEvent(event)
