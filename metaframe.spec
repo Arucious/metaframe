@@ -16,6 +16,9 @@ a = Analysis(
     datas=[],
     hiddenimports=[
         'PyQt6.sip',
+        'PyQt6.QtCore',
+        'PyQt6.QtGui',
+        'PyQt6.QtWidgets',
         'PIL._tkinter_finder',
         'exifread',
         'click',
@@ -27,9 +30,9 @@ a = Analysis(
         'pillow_heif',
         'pillow_heif._pillow_heif',
     ],
-    hookspath=[],
+    hookspath=['hooks'],
     hooksconfig={},
-    runtime_hooks=[],
+    runtime_hooks=['hooks/hook-qt-macos.py'] if sys.platform == 'darwin' else [],
     excludes=[
         'tkinter',
         'matplotlib',
