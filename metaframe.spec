@@ -55,10 +55,10 @@ if sys.platform == 'darwin':
         debug=False,
         bootloader_ignore_signals=False,
         strip=False,
-        upx=True,
+        upx=False,  # Disable UPX on macOS to avoid issues
         console=False,
         disable_windowed_traceback=False,
-        argv_emulation=True,
+        argv_emulation=False,  # Disable argv emulation - causes Qt crashes on macOS
         target_arch=None,
         codesign_identity=None,
         entitlements_file=None,
@@ -71,7 +71,7 @@ if sys.platform == 'darwin':
         a.zipfiles,
         a.datas,
         strip=False,
-        upx=True,
+        upx=False,  # Disable UPX on macOS
         upx_exclude=[],
         name='metaframe',
     )
@@ -82,8 +82,8 @@ if sys.platform == 'darwin':
         icon=None,
         bundle_identifier='com.metaframe.app',
         info_plist={
-            'CFBundleShortVersionString': '0.1.0',
-            'CFBundleVersion': '0.1.0',
+            'CFBundleShortVersionString': '0.2.0',
+            'CFBundleVersion': '0.2.0',
             'NSHighResolutionCapable': True,
             'NSPrincipalClass': 'NSApplication',
             'CFBundleDocumentTypes': [
