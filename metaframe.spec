@@ -85,8 +85,8 @@ if sys.platform == 'darwin':
         icon=None,
         bundle_identifier='com.metaframe.app',
         info_plist={
-            'CFBundleShortVersionString': '0.2.0',
-            'CFBundleVersion': '0.2.0',
+            'CFBundleShortVersionString': '0.2.3',
+            'CFBundleVersion': '0.2.3',
             'NSHighResolutionCapable': True,
             'NSPrincipalClass': 'NSApplication',
             'CFBundleDocumentTypes': [

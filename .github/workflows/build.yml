@@ -88,12 +88,24 @@ jobs:
           path: dist/${{ matrix.artifact_name }}
           if-no-files-found: error
 
-      - name: Sign and create macOS app bundle zip
+      - name: Fix and sign macOS app bundle
         if: runner.os == 'macOS'
         run: |
           cd dist
           ls -la
           if [ -d "MetaFrame.app" ]; then
+            # Remove problematic Qt permission plugins that crash on macOS 26
+            # These plugins cause CFBundleCopyBundleURL crashes during static initialization
+            echo "Removing problematic Qt permission plugins..."
+            find MetaFrame.app -name "*permission*" -type f -delete 2>/dev/null || true
+            find MetaFrame.app -name "*darwinpermission*" -type f -delete 2>/dev/null || true
+
+            # Also remove any location-related plugins that might cause issues
+            find MetaFrame.app -name "*location*" -type f -path "*/plugins/*" -delete 2>/dev/null || true
+
+            echo "Remaining plugins:"
+            find MetaFrame.app -path "*/plugins/*" -type f | head -20
+
             # Ad-hoc sign the app to prevent code signing issues
             codesign --force --deep --sign - MetaFrame.app
             zip -r MetaFrame-macos.app.zip MetaFrame.app
